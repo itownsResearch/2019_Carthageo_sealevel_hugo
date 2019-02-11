@@ -3,9 +3,11 @@ import * as THREE from 'three';
 import { getColor } from './color';
 
 function createMaterial(vShader, fShader) {
+
     let uniforms = {
-        time: {type: 'f', value: 0.2},
+        time: {type: 'f', value: 1.0},
         waterLevel: {type: 'f', value: 0.0},
+        zbot: { type: Float32Array, value: altitudeBuildings },
         // resolution: {type: "v2", value: new THREE.Vector2()},
     };
     // uniforms.resolution.value.x = window.innerWidth;
@@ -26,11 +28,11 @@ const vertexShader = `
 #include <logdepthbuf_pars_vertex>
 uniform float time;
 attribute float zbottom;
-varying float zbot;
+varying float zmin;
 
 void main(){
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    zbot = zbottom;
+    zmin = zbottom;
     #include <logdepthbuf_vertex>
 }
 `;
@@ -39,7 +41,7 @@ const fragmentShader = `
 #include <logdepthbuf_pars_fragment>
 uniform float time;
 uniform float waterLevel;
-varying float zbot;
+varying float zmin;
 
 #define PI 3.14159
 #define TWO_PI (PI*2.0)
@@ -47,29 +49,31 @@ varying float zbot;
 
 void main(){
     #include <logdepthbuf_fragment>
-    if (abs(zbot) > 1000.0){
-        gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0);
+    if (abs(zmin) > 1000.0){
+        gl_FragColor = vec4(0.0, 0.0, 1.0, time);
         return;
     }
-    if (waterLevel - zbot > 3.0){
-        gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+    if (waterLevel - zmin > 1.0){
+		    gl_FragColor = vec4(1, 0, 0, time);
         return;
     }
-    else if (waterLevel - zbot > 2.0){
-        gl_FragColor = vec4(1.0, 1., 0.1, 1.0);
+    if (waterLevel - zmin > 0.5){
+        gl_FragColor = vec4(1, 0.5, 0, time);
         return;
     }
-    else if (waterLevel - zbot > 0.0){
-        gl_FragColor = vec4(0.8, 0.7, 0.0, 1.0);
+    else if (waterLevel - zmin > 0.0){
+        gl_FragColor = vec4(1, 1, 0, time);
         return;
     }
-    gl_FragColor = vec4(0.0, 0.9, 0.1, 1.0);
-}
+    gl_FragColor = vec4(0.93, 0.5, 0.93, 1.0);
+  }
 `;
 
+
+let delta_z = 3.0; //to calibrate the color change of the buildings
 let shadMatRem = createMaterial(vertexShader, fragmentShader);
 function addShader(result){
-    result.material = shadMatRem; 
+    result.material = shadMatRem;
 }
 
 function extrudeBuildings(properties) {
@@ -77,8 +81,12 @@ function extrudeBuildings(properties) {
 }
 
 function altitudeBuildings(properties) {
-    return properties.z_max - properties.hauteur;
+    return - properties.hauteur;
 }
+function calc_zmin(properties){
+	return properties.z_min - delta_z;
+}
+
 
 //const nivEau = 20
 
@@ -87,7 +95,6 @@ let colorForWater = getColorForLevelX(0);
 
 function colorBuildings(properties) {
     let altiBuilding = altitudeBuildings(properties);
-    //console.log(properties);
     return colorForWater(altiBuilding);
     //return getColor(altiBuilding, 5);
 }
@@ -106,7 +113,7 @@ let batiRem = {
         extrude: extrudeBuildings,
         attributes: { // works for extruded meshes only
             // color: { type: Uint8Array, value: colorBuildings, itemSize:3, normalized:true }, // does not work
-            zbottom: { type: Float32Array, value: altitudeBuildings },
+            zbottom: { type: Float32Array, value: calc_zmin },
             id: { type: Uint32Array, value: (prop, id) => { return id } }
         },
     }),

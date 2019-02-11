@@ -37,7 +37,14 @@ function GuiTools(domId, view, w) {
     this.colorGui = this.gui.addFolder('Color Layers');
     this.geometryGui = this.gui.addFolder('Geometry Layers');
     this.elevationGui = this.gui.addFolder('Elevation Layers');
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
     if (view) {
         this.view = view;
         view.addEventListener('layers-order-changed', (function refreshColorGui() {
@@ -83,7 +90,10 @@ GuiTools.prototype.addImageryLayerGUI = function addImageryLayerGUI(layer) {
         layer.frozen = value;
         this.view.notifyChange(layer);
     }).bind(this));
+	
 };
+
+
 
 GuiTools.prototype.addElevationLayerGUI = function addElevationLayerGUI(layer) {
     var folder = this.elevationGui.addFolder(layer.id);
@@ -112,15 +122,23 @@ GuiTools.prototype.addElevationLayersGUI = function addElevationLayersGUI(layers
 
 GuiTools.prototype.addGeometryLayerGUI = function addGeometryLayerGUI(layer) {
     var folder = this.geometryGui.addFolder(layer.id);
-    folder.add({ visible: layer.visible }, 'visible').onChange((function updateVisibility(value) {
+    folder.add({
+            visible: layer.visible
+        }, 'visible').onChange((function updateVisibility(value) {
         layer.visible = value;
         this.view.notifyChange(layer);
     }).bind(this));
-    folder.add({ opacity: layer.opacity }, 'opacity').min(0.0).max(1.0).onChange((function updateOpacity(value) {
+    folder.add({
+            opacity: layer.opacity
+        },
+        'opacity').min(0.0).max(1.0).onChange((function updateOpacity(value) {
         layer.opacity = value;
         this.view.notifyChange(layer);
     }).bind(this));
-    folder.add({ wireframe: layer.wireframe }, 'wireframe').onChange((function updateWireframe(value) {
+    folder.add({
+            wireframe: layer.wireframe
+        },
+        'wireframe').onChange((function updateWireframe(value) {
         layer.wireframe = value;
         this.view.notifyChange(layer);
     }).bind(this));

@@ -56,15 +56,20 @@ body { margin: 0; overflow:hidden; height:100%}
 }
 
 .bewareOrange {
-    color: orangered;
+    color: orange;
 }
 .bewareYellow {
     color: yellow;
 }
 
 .bewareNiet {
-    color: green;
+    color: white;
 }
+.bewareothers{
+	color: #1a1a1a;
+}
+
+
 
 #board {
     position: absolute;
@@ -78,36 +83,36 @@ body { margin: 0; overflow:hidden; height:100%}
     padding: 0 1rem;
     background: #1a1a1a;
     border: 1px solid #2c2c2c;
-    opacity: 0.7;
+    opacity: 1;
 }
 
 #redsquare {
-    width: 10px;
-    height: 10px;
-    background: red;
+  width: 15px;
+  height: 15px;
+  background: red;
 }
 #orangesquare {
-    width: 10px;
-    height: 10px;
-    background: orangered;
+  width: 15px;
+  height: 15px;
+  background: orange;
 }
 #yellowsquare {
-    width: 10px;
-    height: 10px;
-    background: yellow;
+  width: 15px;
+  height: 15px;
+  background: yellow;
 }
-#greensquare {
-    width: 10px;
-    height: 10px;
-    background: green;
+#whitesquare {
+  width: 15px;
+  height: 15px;
+  background: white;
 }
 
 .tooltip {
     display: none;
     background-image: linear-gradient(rgba(80, 80, 80,0.95), rgba(60, 60, 60,0.95));
     box-shadow: -1px 2px 5px 1px rgba(0, 0, 0, 0.5);
-    margin-top: 20px;
-    margin-left: 20px;
+    margin-top: 15px;
+    margin-left: 15px;
     padding: 10px;
     position: absolute;
     z-index: 1000;

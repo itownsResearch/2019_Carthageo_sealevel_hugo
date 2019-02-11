@@ -3,23 +3,21 @@ import * as THREE from 'three';
 import { getColor } from './color';
 
 function createMaterial(vShader, fShader) {
+
     let uniforms = {
+        time: {type: 'f', value: 0.2},
         waterLevel: {type: 'f', value: 0.0},
-        opacity: {type: 'f', value: 1.0},
-        z0: {type: 'f', value: 0.0},
-        z1: {type: 'f', value: 2.0},
-        //color0: {type: 'c', value: new THREE.Color(0x888888)},
-        color0: {type: 'c', value: new THREE.Color(0x006600)},
-        color1: {type: 'c', value: new THREE.Color(0xbb0000)},
-        //color1: {type: 'c', value: new THREE.Color(0x4444ff)},
+        // resolution: {type: "v2", value: new THREE.Vector2()},
     };
+    // uniforms.resolution.value.x = window.innerWidth;
+    // uniforms.resolution.value.y = window.innerHeight;
 
     let meshMaterial = new THREE.ShaderMaterial({
         uniforms: uniforms,
         vertexShader: vShader,
         fragmentShader: fShader,
         transparent: true,
-        opacity: 0.5,
+        opacity: 1.0,
         side: THREE.DoubleSide
     });
     return meshMaterial;
@@ -27,51 +25,52 @@ function createMaterial(vShader, fShader) {
 
 const vertexShader = `
 #include <logdepthbuf_pars_vertex>
+uniform float time;
 attribute float zbottom;
-attribute vec3 color;
-uniform float waterLevel;
-uniform float opacity;
-uniform vec3 color0;
-uniform vec3 color1;
-uniform float z0;
-uniform float z1;
+varying float zmin;
 
-varying vec4 v_color;
-//varying float v_height;
 void main(){
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    float t = smoothstep(z0, z1, waterLevel-zbottom); // zbottom+z0 -> 0, zbottom+z1 -> 1
-    v_color = vec4(mix(color0, color1, t), opacity);
-    v_color.rgb *= color.r * 2.;
+    zmin = zbottom;
     #include <logdepthbuf_vertex>
 }
 `;
 
 const fragmentShader = `
 #include <logdepthbuf_pars_fragment>
-varying vec4 v_color;
-//varying float v_height;
+uniform float time;
+uniform float waterLevel;
+varying float zmin;
+
+#define PI 3.14159
+#define TWO_PI (PI*2.0)
+#define N 68.5
+
 void main(){
     #include <logdepthbuf_fragment>
-    //float bo = clamp(v_height / 2., 0., 1.0) ; // 10.;
-    gl_FragColor = v_color; //vec4(vec3(bo, bo, bo), 1.); // v_color;
-}
+    if (abs(zmin) > 1000.0){
+        gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0);
+        return;
+    }
+    if (waterLevel - zmin > 1.0){
+		    gl_FragColor = vec4(1, 0, 0, 1.0);
+        return;
+    }
+    if (waterLevel - zmin > 0.5){
+        gl_FragColor = vec4(1, 0.6, 0, 1.0);
+        return;
+    }
+    else if (waterLevel - zmin > 0.0){
+        gl_FragColor = vec4(1, 1, 0, 1.0);
+        return;
+    }
+    gl_FragColor = vec4(1, 1, 1, 1.0);
+  }
 `;
-
-let resultoss;
+let delta_z = 3.0; //to calibrate the color change of the buildings
 let shadMat = createMaterial(vertexShader, fragmentShader);
 function addShader(result){
-    
     result.material = shadMat;
-    //console.log("result ", result)
-    resultoss = result;
-    // let k = 0;
-    // for (let i = 0 ; i < result.children.length; ++i){
-    //     let mesh = result.children[i];
-    //     //mesh.material = shadMat;
-    //     //console.log("el klodo --> ", mesh.minAltitude)
-    //     meshes.push(mesh);
-    // }
 }
 
 function extrudeBuildings(properties) {
@@ -79,19 +78,21 @@ function extrudeBuildings(properties) {
 }
 
 function altitudeBuildings(properties) {
-    return properties.z_max - properties.hauteur;
+    return - properties.hauteur;
 }
 
-//const nivEau = 20
+function calc_zmin(properties){ // z_min = z_min - dz
+	return properties.z_min - delta_z;
+}
+
+
 
 let getColorForLevelX = (nivEau) => ( (alti) => getColor(alti, nivEau) );
 let colorForWater = getColorForLevelX(0);
 
 function colorBuildings(properties) {
     let altiBuilding = altitudeBuildings(properties);
-    //console.log(properties);
     return colorForWater(altiBuilding);
-    //return getColor(altiBuilding, 5);
 }
 
 function  acceptFeature(p) {
@@ -103,12 +104,12 @@ let bati = {
     type: 'geometry',
     update: itowns.FeatureProcessing.update,
     convert: itowns.Feature2Mesh.convert({
-        color: colorBuildings,
+        //color: colorBuildings,
         altitude: altitudeBuildings,
         extrude: extrudeBuildings,
         attributes: { // works for extruded meshes only
-            color: { type: Uint8Array, value: (prop, id, extruded) => { return new THREE.Color(extruded ? 0xffffff : 0x888888);}, itemSize:3, normalized:true },
-            zbottom: { type: Float32Array, value: altitudeBuildings },
+            //color: { type: Uint8Array, value: (prop, id, extruded) => { return new THREE.Color(extruded ? 0xffffff : 0x888888);}, itemSize:3, normalized:true },
+            zbottom: { type: Float32Array, value: calc_zmin},
             id: { type: Uint32Array, value: (prop, id) => { return id;} }
         },
     }),
@@ -128,7 +129,7 @@ let bati = {
         projection: 'EPSG:4326',
         ipr: 'IGN',
         format: 'application/json',
-        zoom: { min: 16, max: 16 },  // Beware that showing building at smaller zoom than ~16 create some holes as the WFS service can't answer more than n polylines per request
+        zoom: { min: 12, max: 12 },  // Beware that showing building at smaller zoom than ~16 create some holes as the WFS service can't answer more than n polylines per request
         // extent: {
         //     west: 4.568,
         //     east: 5.18,
@@ -140,4 +141,4 @@ let bati = {
 
 
 // export default bati;
-export {bati, getColorForLevelX, colorForWater, shadMat, resultoss};
+export {bati, shadMat};

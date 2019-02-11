@@ -10,7 +10,7 @@ function getColor(alti, nivEau){
     let color = new THREE.Color(green);
     let flag = nivEau - alti;
     if (flag > 3) {
-        color = new THREE.Color(red);
+        color = new THREE.Color(0x0000ff);
     }
     else if (flag > 2) {
         color = new THREE.Color(orange);

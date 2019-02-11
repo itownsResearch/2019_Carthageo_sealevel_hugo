@@ -32,7 +32,7 @@ function createWaterPlaneMesh(c) {
     let texture = new THREE.TextureLoader().load( './data/eau.jpg' );
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set( 100, 100 );
+    texture.repeat.set(100, 100);
 
     let geometry = new THREE.BufferGeometry();
 
